@@ -79,15 +79,16 @@
                                   #(agent nil
                                           :error-mode :continue
                                           :error-handler (fn [_ e] (logger/warn e)))))]
-    (dorun (map (fn [ag word]
-                  (-> ag
-                      (add-watch :result
-                                 (fn [_ _ _ data] (handle-search-result
-                                                    output-channel
-                                                    data)))
-                      (send-off search word parse-response)))
-                agents
-                words))))
+    (dorun (map
+            (fn [ag word]
+              (-> ag
+                  (add-watch
+                    :result
+                    (fn [_ _ _ data]
+                      (handle-search-result output-channel data)))
+                  (send-off search word parse-response)))
+            agents
+            words))))
 
 (defn save-result-to-file [output-dir word url description meta-tags]
   (let [f (io/file output-dir (str word ".edn"))]
@@ -107,7 +108,6 @@
         (logger/debug "running search task with params:" options)
         (a/go-loop []
           (let [{:keys [url word description meta-tags]} (a/<! search-result-channel)]
-            ;(logger/debug "found meta tags for" word url meta-tags)
             (save-result-to-file (:output options)
                                  word url description meta-tags))
           (recur))
