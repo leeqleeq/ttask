@@ -12,6 +12,8 @@
   (:import java.io.ByteArrayInputStream
            java.nio.charset.StandardCharsets))
 
+(declare exit!)
+
 (def ^:dynamic *user* nil)
 (def ^:dynamic *api-key* nil)
 
@@ -29,7 +31,8 @@
    ["-w" "--words WORDS" "search terms [comma separated]"
     :default ["clojure", "scala"]
     :parse-fn #(filter (comp pos? count) (cs/split % #"\s*,\s*"))
-    :validate [not-empty "search terms shouldn't be empty"]]])
+    :validate [not-empty "search terms shouldn't be empty"]]
+   ["-i" "--info" "get help"]])
 
 (defn string-to-input-stream [s]
   (ByteArrayInputStream. (.getBytes s (StandardCharsets/UTF_8))))
@@ -99,18 +102,27 @@
                  \newline)
           :append true)))
 
+(defn exit! [code & {:keys [hook]}]
+  (when hook (hook))
+  (System/exit code))
+
+(defn process-command-line [args]
+  (let [{:keys [options errors summary] :as o} (cli/parse-opts args cli-options-spec)]
+    (cond (:info options) (exit! 1 :hook #(logger/info summary))
+          (not-every? options [:username :api-key])
+            (exit! 1 :hook #(logger/fatal "user name or api key unspecified"))
+          errors (exit! 1 :hook #(logger/fatal errors))
+          :else options)))
+
 (defn -main [& args]
-  (let [cli-parse-result (cli/parse-opts args cli-options-spec)]
-    (if-let [error (:errors cli-parse-result)]
-      (logger/warn (Exception. (str error)))
-      (let [search-result-channel (a/chan)
-            options (:options cli-parse-result)]
-        (logger/debug "running search task with params:" options)
-        (a/go-loop []
-          (let [{:keys [url word description meta-tags]} (a/<! search-result-channel)]
-            (save-result-to-file (:output options)
-                                 word url description meta-tags))
-          (recur))
-        (binding [*user* (:username options)
-                  *api-key* (:api-key options)]
-          (search-all (:words options) (:requests options) search-result-channel))))))
+  (let [search-result-channel (a/chan)
+        options (process-command-line args)]
+    (logger/debug "running search task with params:" options)
+    (a/go-loop []
+      (let [{:keys [url word description meta-tags]} (a/<! search-result-channel)]
+        (save-result-to-file (:output options)
+                             word url description meta-tags))
+      (recur))
+    (binding [*user* (:username options)
+              *api-key* (:api-key options)]
+      (search-all (:words options) (:requests options) search-result-channel))))
