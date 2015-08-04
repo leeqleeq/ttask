@@ -17,10 +17,8 @@
 
 (def cli-options-spec
   [["-u" "--username USERNAME" "yandex.xml user name"
-    :default "leeqleeq"
     :validate [not-empty "api user name shouldn't be empty"]]
    ["-k" "--api-key API-KEY" "yandex.xml api key"
-    :default "03.326917787:57988d4de9fde13937d0f15b2d4f50fb"
     :validate [not-empty "api key shouldn't be empty"]]
    ["-r" "--requests REQUESTS" "max simultaneous requests count"
     :default 4
