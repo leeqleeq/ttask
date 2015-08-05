@@ -10,7 +10,8 @@
             [clojure.java.io :as io]
             [clj-http.client :as http])
   (:import java.io.ByteArrayInputStream
-           java.nio.charset.StandardCharsets))
+           java.nio.charset.StandardCharsets)
+  (:gen-class :main true))
 
 (declare exit!)
 
