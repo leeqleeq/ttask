@@ -81,8 +81,7 @@
 (defn search-all [words agent-pool-size output-channel]
   (let [agents (cycle (repeatedly agent-pool-size
                                   #(agent nil
-                                          :error-mode :continue
-                                          :error-handler (fn [_ e] (logger/warn e)))))]
+                                          :error-handler (fn [_ e] (exit! 1 :hook (logger/warn e))))))]
     (dorun (map
             (fn [ag word]
               (-> ag
