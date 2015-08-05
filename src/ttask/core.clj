@@ -51,7 +51,9 @@
     (a/go (a/>! out-channel {:url url
                              :word word
                              :description description
-                             :meta-tags (get-meta-tags url)}))))
+                             :meta-tags  (try (get-meta-tags url)
+                                              (catch Throwable error
+                                                {:error (.getMessage error)}))}))))
 
 (defn parse-response [resp-body]
   (let [resp-xml (-> resp-body
